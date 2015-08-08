@@ -7,7 +7,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Date;
+import java.util.List;
+import twitter4j.*;
 import twitter4j.conf.Configuration;
 import twitter4j.conf.ConfigurationBuilder;
 
@@ -28,6 +30,85 @@ public class TwitterDemo {
                 .setOAuthAccessToken(ACCESS_TOKEN)
                 .setOAuthAccessTokenSecret(ACCESS_TOKEN_SECRET)
                 .build();
+        TwitterStream twStream = new TwitterStreamFactory(configuration).getInstance();
+        twStream.addListener(new MyStatusListener());
+        twStream.sample();
+    }
+    
+    static class MyStatusListener implements StatusListener {
+
+        @Override
+        public void onStatus(Status status) {
+            Double lat = null;
+            Double lng = null;
+            String[] urls = null;
+            String[] medias = null;
+            
+            GeoLocation location = status.getGeoLocation();
+            if( location != null ){
+                double dlat = location.getLatitude();
+                double dlng = location.getLongitude();
+                lat = dlat;
+                lng = dlng;
+            }
+            long id = status.getId(); //. ツイートID
+            String text = status.getText(); //. ツイート本文
+            long userid = status.getUser().getId(); //. ユーザーID
+            String username = status.getUser().getScreenName(); //. ユーザー表示名
+            Date created = status.getCreatedAt(); //. ツイート日時
+            
+            //. ツイート本文にリンクURLが含まれていれば取り出す
+            URLEntity[] uentitys = status.getURLEntities();
+            if( uentitys != null && uentitys.length > 0 ){
+            	List list = new ArrayList();
+                for( int i = 0; i < uentitys.length; i ++ ){
+                    URLEntity uentity = uentitys[i];
+                    String expandedURL = uentity.getExpandedURL();
+                    list.add( expandedURL );
+                }
+	        urls = ( String[] )list.toArray( new String[0] );
+            }
+            
+            //. ツイート本文に画像／動画URLが含まれていれば取り出す
+            MediaEntity[] mentitys = status.getMediaEntities();
+            if( mentitys != null && mentitys.length > 0 ){
+            	List list = new ArrayList();
+                for( int i = 0; i < mentitys.length; i ++ ){
+                    MediaEntity mentity = mentitys[i];
+                    String expandedURL = mentity.getExpandedURL();
+                    list.add( expandedURL );
+                }
+                medias = ( String[] )list.toArray( new String[0] );
+            }
+
+            //. 取り出した情報を表示する（以下では id, username, text のみ）
+            System.out.println( "id = " + id + ", username = " + username + ", text = " + text );
+        }
+
+        @Override
+        public void onDeletionNotice(StatusDeletionNotice sdn) {
+            //System.out.println("onDeletionNotice.");
+        }
+
+        @Override
+        public void onTrackLimitationNotice(int i) {
+            //System.out.println("onTrackLimitationNotice.(" + i + ")");
+        }
+
+        @Override
+        public void onScrubGeo(long l, long l1) {
+            //System.out.println("onScrubGeo.(" + lat + ", " + lng + ")");
+        }
+
+        @Override
+        public void onStallWarning(StallWarning sw) {
+             // TODO Auto-generated method stub
+        }
+
+        @Override
+        public void onException(Exception excptn) {
+            //System.out.println("onException.");
+        }
     }
     
     private static void InputKeyToken(String filename){
