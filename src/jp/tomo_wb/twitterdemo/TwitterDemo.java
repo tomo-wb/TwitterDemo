@@ -23,20 +23,50 @@ public class TwitterDemo {
     private static String ACCESS_TOKEN = "";
     private static String ACCESS_TOKEN_SECRET = "";
     
-    public static void main(String[] args) {
+    public static void main(String[] args) throws TwitterException {
         InputKeyToken(args[0]);
         Configuration configuration = new ConfigurationBuilder().setOAuthConsumerKey(CONSUMER_KEY)
                 .setOAuthConsumerSecret(CONSUMER_SECRET)
                 .setOAuthAccessToken(ACCESS_TOKEN)
                 .setOAuthAccessTokenSecret(ACCESS_TOKEN_SECRET)
                 .build();
+        
+        Twitter twitter = new TwitterFactory(configuration).getInstance();
+        Query query = new Query();
+        
+        query.setQuery("仙台市");
+        query.setLang("ja");
+        query.setCount(100);
+        query.resultType(Query.RECENT);
+        
+        int num = 0;
+        for (int i = 1; i <= 1; i++) {
+            QueryResult result = twitter.search(query);
+            System.out.println("ヒット数 : " + result.getTweets().size());
+            System.out.println("ページ数 : " + new Integer(i).toString());
+            
+            for (Status status : result.getTweets()) {
+                if(!status.isRetweet()){
+                    System.out.println(num + " " + status.getCreatedAt().toString() +" @" + status.getUser().getScreenName() + ":" + status.getText());
+                    System.out.println(status.getId() + " " + status.getUser().getName()+ " " + status.getUser().getId());
+                    num++;
+                }
+            }
+            if (result.hasNext()) {
+                query = result.nextQuery();
+            } else {
+                break;
+            }
+        }
+        
+        /*
         TwitterStream twStream = new TwitterStreamFactory(configuration).getInstance();
         twStream.addListener(new MyStatusListener());
         twStream.sample();
+                */
     }
     
     static class MyStatusListener implements StatusListener {
-
         @Override
         public void onStatus(Status status) {
             Double lat = null;
